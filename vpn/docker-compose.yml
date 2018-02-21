@@ -1,0 +1,35 @@
+version: '2'
+services:
+  openvpn:
+    container_name: openvpn
+    image: kylemanna/openvpn
+    restart: always
+    ports:
+      - "1194:1194/udp"
+    networks:
+      - nanoon
+    volumes:
+      - $NANOON_CONFIGDIR/openvpn:/etc/openvpn
+    cap_add:
+      - NET_ADMIN
+
+  openvpn_tcp:
+    container_name: openvpn_tcp
+    image: kylemanna/openvpn    
+    restart: always
+    ports:
+      - "1194:1194/tcp"
+    networks:
+      - nanoon
+    volumes:
+      - $NANOON_CONFIGDIR/openvpn:/etc/openvpn
+    cap_add:
+      - NET_ADMIN
+    command: ovpn_run --proto tcp
+
+
+networks:
+  nanoon:
+    external:
+      name: traefik_nanoon
+

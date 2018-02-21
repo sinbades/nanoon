@@ -1,0 +1,24 @@
+version: '2'
+services:
+  searx:
+    ports:
+      - "8888:8888"
+    restart: always
+    image: hoellen/searx
+    container_name: searx
+    networks:
+      - nanoon
+    environment:
+      - BASE_URL="https://$NANOON_SEARCH"
+      - IMAGE_PROXY=True
+    labels:
+      - "traefik.frontend.rule=Host:$NANOON_SEARCH"
+      - "traefik.port=8888"
+      - "traefik.enable=true"
+
+
+networks:
+  nanoon:
+    external:
+      name: traefik_nanoon
+

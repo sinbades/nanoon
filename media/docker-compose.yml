@@ -1,0 +1,213 @@
+version: '2'
+services:
+
+  tvheadend:
+    container_name: tvheadend
+    image: linuxserver/tvheadend
+    restart: always
+    ports:
+      - "9981:9981"
+      - "9982:9982"
+    networks:
+      - nanoon
+    environment:
+      - PUID=1000
+      - PGID=100
+      - TZ=Europe/Paris
+    volumes:
+     - $NANOON_FILESDIR:/media
+     - $NANOON_CONFIGDIR/tvheadend/:/config
+    labels:
+     - "traefik.frontend.rule=Host:$NANOON_TV"
+     - "traefik.port=9981"
+     - "traefik.enable=true"
+    #devices:
+     # - /dev/dvb:/dev/dvb
+
+  emby:
+    container_name: emby
+    image: emby/embyserver
+    restart: always
+    ports:
+      - "8096:8096"
+    networks:
+      - nanoon
+    environment:
+      - UID=1000
+      - GID=100
+      - GIDLIST=4 
+      - TZ=Europe/Paris
+    volumes:
+     - $NANOON_FILESDIR:/media
+     - $NANOON_CONFIGDIR/emby/:/config
+    labels:
+     - "traefik.frontend.rule=Host:$NANOON_PLAY"
+     - "traefik.port=8096"
+     - "traefik.enable=true"
+
+  couchpotato:
+    container_name: couchpotato
+    restart: always
+    image: linuxserver/couchpotato
+    ports:
+      - "5050:5050"
+    networks:
+      - nanoon
+    environment:
+      - PUID=1000
+      - PGID=100
+      - TZ=Europe/Paris
+    volumes:
+     - $NANOON_FILESDIR:/media
+     - $NANOON_CONFIGDIR/couchpotato/:/config
+    labels:
+     - "traefik.frontend.rule=Host:$NANOON_MOVIE"
+     - "traefik.port=5050"
+     - "traefik.enable=true"
+
+  htpcmanager:
+    container_name: htpcmanager
+    restart: always
+    image: linuxserver/htpcmanager
+    ports:
+      - "8085:8085"
+    networks:
+      - nanoon
+    environment:
+      - PUID=1000
+      - PGID=100
+      - TZ=Europe/Paris
+    volumes:
+     - $NANOON_CONFIGDIR/htpcmanager/:/config
+    #labels:
+    # - "traefik.frontend.rule=Host:movie.nesven.eu"
+    # - "traefik.port=5050"
+    # - "traefik.enable=true"
+
+  sickrage:
+    container_name: sickrage
+    restart: always
+    image: linuxserver/sickrage
+    ports:
+      - "8081:8081"
+    networks:
+      - nanoon
+    environment:
+      - PUID=1000
+      - PGID=100
+      - TZ=Europe/Paris
+    volumes:
+     - $NANOON_FILESDIR:/media
+     - $NANOON_CONFIGDIR/sickrage/:/config
+    labels:
+     - "traefik.frontend.rule=Host:$NANOON_SHOW"
+     - "traefik.port=8081"
+     - "traefik.enable=true"
+
+  jackett:
+    container_name: jackett
+    restart: always
+    image: linuxserver/jackett
+    ports:
+      - "9117:9117"
+    networks:
+      - nanoon
+    environment:
+      - PUID=1000
+      - PGID=100
+      - TZ=Europe/Paris
+    volumes:
+     - $NANOON_FILESDIR/Transmission/complete/:/downloads
+     - $NANOON_CONFIGDIR/jackett/:/config
+    #labels:
+     #- "traefik.frontend.rule=Host:movie.nesven.eu"
+     #- "traefik.port=5050"
+     #- "traefik.enable=true"
+
+  headphones:
+    container_name: headphones
+    restart: always
+    image: linuxserver/headphones
+    ports:
+      - "8181:8181"
+    networks:
+      - nanoon
+    environment:
+      - PUID=1000
+      - PGID=100
+      - TZ=Europe/Paris
+    volumes:
+     - $NANOON_FILESDIR/Transmission/:/downloads 
+     - $NANOON_FILESDIR/Music/:/music
+     - $NANOON_CONFIGDIR/headphones/:/config
+    labels:
+     - "traefik.frontend.rule=Host:$NANOON_MUSIC"
+     - "traefik.port=8181"
+     - "traefik.enable=true"
+
+  lazylibrarian:
+    container_name: lazylibrarian
+    restart: always
+    image: linuxserver/lazylibrarian
+    ports:
+      - "5299:5299"
+    networks:
+      - nanoon
+    environment:
+      - PUID=1000
+      - PGID=100
+      - TZ=Europe/Paris
+    volumes:
+     - $NANOON_FILESDIR/Transmission/:/downloads
+     - $NANOON_FILESDIR/Books/:/books
+     - $NANOON_CONFIGDIR/lazylibrarian/:/config
+    labels:
+     - "traefik.frontend.rule=Host:$NANOON_BOOK"
+     - "traefik.port=5299"
+     - "traefik.enable=true"
+
+  mylar:
+    container_name: mylar
+    restart: always
+    image: linuxserver/mylar
+    ports:
+      - "8090:8090"
+    networks:
+      - nanoon
+    environment:
+      - PUID=1000
+      - PGID=100
+      - TZ=Europe/Paris
+    volumes:
+     - $NANOON_FILESDIR/Books/:/books
+     - $NANOON_FILESDIR/Comics/:/comics
+     - $NANOON_CONFIGDIR/mylar/:/config
+    #labels:
+     #- "traefik.frontend.rule=Host:comic.nesven.eu"
+     #- "traefik.port=8090"
+     #- "traefik.enable=true"
+
+  ombi:
+    container_name: ombi
+    restart: always
+    image: linuxserver/ombi
+    ports:
+      - "3579:3579"
+    networks:
+      - nanoon
+    environment:
+      - PUID=1000
+      - PGID=100
+      - TZ=Europe/Paris
+    volumes:
+     - $NANOON_CONFIGDIR/ombi/:/config
+    labels:
+     - "traefik.frontend.rule=Host:$NANOON_MEDIA"
+     - "traefik.port=3579"
+     - "traefik.enable=true"
+
+
+networks:
+  nanoon:
+    external:
+      name: traefik_nanoon

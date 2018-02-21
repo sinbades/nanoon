@@ -1,0 +1,21 @@
+version: '2'
+
+services:
+  traefik:
+    image: traefik
+    container_name : traefik
+    restart: always
+    command: --web --docker --docker.domain=docker.localhost --logLevel=DEBUG
+    networks:
+      - nanoon
+    ports:
+      - "80:80"
+      - "8182:8080"
+      - "1444:443"
+    volumes:
+      - $NANOON_CONFIGDIR/traefik/traefik.toml:/etc/traefik/traefik.toml
+      - $NANOON_CONFIGDIR/traefik/acme/acme.json:/acme.json 
+      - /var/run/docker.sock:/var/run/docker.sock
+networks:
+  nanoon:
+    driver: bridge

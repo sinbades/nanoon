@@ -1,0 +1,43 @@
+version: '2'
+services:
+
+  gitea-db:
+    image: postgres
+    restart: always
+    container_name: gitea-db
+    networks:
+      - nanoon
+    environment:
+      - TZ=Europe/Paris
+      - POSTGRES_DB=giteadb
+      - POSTGRES_USER=gitea
+      - POSTGRES_PASSWORD=giteadb
+    volumes:
+      - $NANOON_CONFIGDIR/gitea-postgres:/var/lib/postgresql/data
+
+
+  gitea:
+    image: gitea/gitea
+    restart: always
+    container_name: gitea
+    networks:
+      - nanoon
+    ports:
+      - "8787:3000"
+      - "10022:22"
+    depends_on:
+      - gitea-db
+    environment:
+      - TZ=Europe/Paris
+    volumes:
+      - $NANOON_CONFIGDIR/gitea/:/data/gitea
+      - $NANOON_FILESDIR/Git/:/data/git
+    labels:
+      - "traefik.frontend.rule=Host:$NANOON_GIT"
+      - "traefik.port=3000"
+      - "traefik.enable=true"
+
+networks:
+  nanoon:
+    external:
+      name: traefik_nanoon

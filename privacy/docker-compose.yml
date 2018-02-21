@@ -1,0 +1,313 @@
+version: '2'
+services:
+
+  rocketchat-mongo:
+    image: mongo:3.4
+    restart: always
+    container_name: rocketchat-mongo
+    command: mongod --smallfiles
+    networks:
+      - nanoon
+    ports:
+      - "27017:27017"
+    environment:
+      - TZ=Europe/Paris
+    volumes:
+      - $NANOON_CONFIGDIR/rocketchat-mongo/:/data/db
+
+  rocketchat:
+    image: rocket.chat
+    restart: always
+    container_name: rocketchat
+    ports:
+      - "8097:3000"
+    networks:
+      - nanoon
+    environment:
+      - TZ=Europe/Paris
+      - ROOT_URL=https://$NANOON_CHAT
+      #- MONGO_URL=mongodb://192.168.1.60:27017
+    links:
+      - rocketchat-mongo:db
+    labels:
+     - "traefik.frontend.rule=Host:$NANOON_CHAT"
+     - "traefik.port=3000"
+     - "traefik.enable=true"
+
+  db_nextcloud:
+    restart: always
+    image: mariadb:10
+    container_name: db_nextcloud
+    networks:
+      - nanoon
+    environment:
+      - MYSQL_ROOT_PASSWORD=dbpass
+      - MYSQL_DATABASE=nextcloud 
+      - MYSQL_USER=nextcloud 
+      - MYSQL_PASSWORD=dbpass
+      - TZ=Europe/Paris
+    volumes:
+      - $NANOON_CONFIGDIR/db_nextcloud/datadir:/var/lib/mysql
+  
+  redis-nextcloud:
+     restart: always
+     container_name: redis-nextcloud
+     image: redis:alpine
+     networks:
+      - nanoon
+     environment:
+      - TZ=Europe/Paris
+
+  collabora:
+    restart: always
+    container_name: collabora
+    image: collabora/code
+    networks:
+      - nanoon
+    ports:
+      - "9980:9980"
+    environment:
+      - TZ=Europe/Paris
+      - username=admin
+      - password=S3cRet
+    labels:
+      - "traefik.frontend.rule=Host:$NANOON_OFFICE"
+      - "traefik.port=9980"
+      - "traefik.enable=true"
+    volumes:
+     - $NANOON_CONFIGDIR/collabora/loolwsd.xml:/etc/loolwsd/loolwsd.xml
+    cap_add:
+      - MKNOD
+
+
+  solr:
+    restart: always
+    container_name: solr
+    image: solr:6-alpine
+    container_name: solr
+    ports:
+      - "8983:8983"
+    networks:
+      - nanoon
+    volumes:
+      - $NANOON_FILESDIR/Solr:/opt/solr/server/solr/mycores
+    entrypoint:
+      - docker-entrypoint.sh
+      - solr-precreate
+      - nextant
+
+  nextcloud:
+    restart: always
+    container_name: nextcloud
+    image: nextcloud:fpm
+    networks:
+      - nanoon
+    links:
+      - db_nextcloud:db_nextcloud 
+      - redis-nextcloud:redis
+      - solr
+    environment:
+      - TZ=Europe/Paris  
+    volumes:
+      - $NANOON_FILESDIR/Cloud/data/:/var/www/html/data
+      - $NANOON_FILESDIR/Cloud/apps:/var/www/html/apps
+      - $NANOON_CONFIGDIR/nextcloud/:/var/www/html/config 
+      - $NANOON_FILESDIR/:/Files
+
+  cron:
+    image: nextcloud
+    container_name: cron
+    restart: always
+    volumes_from:
+      - nextcloud
+    links:
+      - db_nextcloud
+    depends_on:
+      - nextcloud
+    entrypoint: /cron.sh 
+    networks:
+     - nanoon
+
+  nginx-nextcloud:
+    image: nginx:alpine
+    container_name: nginx-nextcloud
+    restart: always
+    networks:
+      - nanoon 
+    ports:
+      - 8889:80
+    links:
+      - nextcloud
+    volumes:
+      - $NANOON_CONFIGDIR/nginx-nextcloud/nginx.conf:/etc/nginx/nginx.conf:ro
+    volumes_from:
+      - nextcloud
+    depends_on: 
+      - nextcloud
+    labels:
+     - "traefik.frontend.rule=Host:$NANOON_CLOUD"
+     - "traefik.port=80"
+     - "traefik.enable=true"
+
+  db_wallabag:
+    image: mariadb
+    container_name: db_wallabag
+    restart: always
+    networks:
+      - nanoon
+    environment:
+      - MYSQL_ROOT_PASSWORD=dbpass
+      - TZ=Europe/Paris 
+    volumes:
+      - $NANOON_CONFIGDIR/db_wallabag/datadir:/var/lib/mysql
+
+  wallabag-redis:
+    image: redis:alpine
+    container_name: wallabag-redis
+    restart: always
+    networks:
+      - nanoon
+    environment:
+      - TZ=Europe/Paris
+
+  wallabag:
+    container_name: wallabag
+    image: wallabag/wallabag
+    restart: always
+    ports:
+      - "8084:80"
+    networks:
+      - nanoon
+    environment:
+      - "MYSQL_ROOT_PASSWORD=dbpass"
+      - "SYMFONY__ENV__DATABASE_DRIVER=pdo_mysql"
+      - "SYMFONY__ENV__DATABASE_HOST=wallabag-db"
+      - "SYMFONY__ENV__DATABASE_PORT=3306"
+      - "SYMFONY__ENV__DATABASE_NAME=wallabag"
+      - "SYMFONY__ENV__DATABASE_USER=wallabag"
+      - "SYMFONY__ENV__DATABASE_PASSWORD=wallapass"
+      - "SYMFONY__ENV__DOMAIN_NAME=https://$NANOON_SAVE"
+    links:
+      - db_wallabag:wallabag-db 
+      - wallabag-redis:redis
+    labels:
+     - "traefik.frontend.rule=Host:$NANOON_SAVE"
+     - "traefik.port=80"
+     - "traefik.enable=true"
+
+  syncthing:
+    container_name: syncthing
+    image: linuxserver/syncthing
+    restart: always
+    ports:
+      - 8384:8384 
+      - 22000:22000 
+      - 21027:21027/udp
+    networks:
+      - nanoon
+    environment:
+      - TZ=Europe/Paris
+      - PGID=100 
+      - PUID=1000
+    volumes:
+      - $NANOON_FILESDIR/Syncthing/:/config 
+      - $NANOON_FILESDIR:/mnt/Files
+    labels:
+      - "traefik.frontend.rule=Host:$NANOON_SYNC"
+      - "traefik.port=8384"
+      - "traefik.enable=true"
+
+  taiga-postgres:
+    container_name: taiga-postgres
+    image: postgres
+    restart: always
+    networks:
+      - nanoon
+    environment:
+      - TZ=Europe/Paris
+      - POSTGRES_DB=taigadb 
+      - POSTGRES_USER=postgres 
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - $NANOON_CONFIGDIR/taiga-postgres:/var/lib/postgresql/data
+
+  taiga-redis:
+    container_name: taiga-redis
+    image: redis:3
+    restart: always
+    networks:
+      - nanoon
+    environment:
+      - TZ=Europe/Paris
+
+  taiga-rabbit:
+    container_name: taiga-rabbit
+    image: rabbitmq:3
+    restart: always
+    networks:
+      - nanoon
+    environment:
+      - TZ=Europe/Paris
+
+  taiga-celery:
+    container_name: taiga-celery
+    image: celery
+    restart: always
+    networks:
+      - nanoon
+    links:
+      - taiga-rabbit:rabbit
+    environment:
+      - TZ=Europe/Paris
+
+  taiga-events:
+    container_name: taiga-events
+    image: benhutchins/taiga-events
+    restart: always
+    networks:
+      - nanoon
+    links:
+      - taiga-rabbit:rabbit
+    environment:
+      - TZ=Europe/Paris
+    labels:
+      - "traefik.frontend.rule=Host:$NANOON_TAIGA;PathPrefixStrip:/events"
+      - "traefik.port=80"
+      - "traefik.enable=true"
+
+  taiga:
+    container_name: taiga
+    image: benhutchins/taiga
+    restart: always
+    networks:
+      - nanoon
+    ports:
+      - 8089:80
+    links:
+      - taiga-rabbit:rabbit
+      - taiga-redis:redis 
+      - taiga-events:events 
+      - taiga-postgres:postgres
+    environment:
+      - TZ=Europe/Paris
+      - TAIGA_DB_NAME=taigadb
+      - TAIGA_DB_HOST=postgres
+      - TAIGA_DB_USER=postgres
+      - TAIGA_DB_PASSWORD=password
+      - TAIGA_HOSTNAME=$NANOON_TAIGA
+      - TAIGA_SSL_BY_REVERSE_PROXY=True
+      - RABBIT_PORT=5672
+      - REDIS_PORT=6379
+    volumes:
+      - $NANOON_FILESDIR/Taiga-media:/usr/src/taiga-back/media 
+      - $NANOON_CONFIGDIR/taiga:/taiga:ro
+    labels:
+      - "traefik.frontend.rule=Host:$NANOON_TAIGA"
+      - "traefik.port=80"
+      - "traefik.enable=true"
+
+networks:
+  nanoon:
+    external:
+      name: traefik_nanoon
+

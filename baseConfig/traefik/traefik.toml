@@ -1,0 +1,50 @@
+################################################################
+# Global configuration
+################################################################
+
+# Entrypoints to be used by frontends that do not specify any entrypoint.
+# Each frontend can specify its own entrypoints.
+#
+# Optional
+# Default: ["http"]
+#
+defaultEntryPoints = ["https", "http"]
+
+[acme]
+email = traefik_email
+ storage = "acme.json" # or "traefik/acme/account" if using KV store
+ entryPoint = "https"
+ onHostRule = true
+ [acme.httpChallenge]
+  entryPoint = "http"
+
+ [entryPoints]
+   [entryPoints.http]
+   address = ":80"
+     [entryPoints.http.redirect]
+       entryPoint = "https"
+   [entryPoints.https]
+   address = ":443"
+     [entryPoints.https.tls]
+#   compress = true
+
+
+################################################################
+# Web configuration backend
+################################################################
+
+ [web]
+ address = ":8080"
+ ReadOnly = false
+
+
+################################################################
+# Docker configuration backend
+################################################################
+
+[docker]
+
+endpoint = "unix:///var/run/docker.sock"
+domain = traefik_hostname
+watch = true
+exposedbydefault = false

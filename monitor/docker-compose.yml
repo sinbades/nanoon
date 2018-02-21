@@ -1,0 +1,68 @@
+version: '2'
+services:
+
+  cachethq-postgres:
+    image: postgres:9.5
+    container_name: cachethq-postgres
+    restart: always
+    networks:
+      - nanoon
+    environment:
+      - TZ=Europe/Paris
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - $NANOON_CONFIGDIR/cachethq-postgres:/var/lib/postgresql/data
+
+
+  cachethq:
+    image: cachethq/docker
+    restart: always
+    container_name: cachethq
+    ports:
+      - "8000:8000"
+    networks:
+      - nanoon
+    environment:
+      - TZ=Europe/Paris
+      - DB_DRIVER=pgsql 
+      - DB_PORT=5432
+      - DB_HOST=postgres 
+      - DB_DATABASE=postgres
+      - DB_USERNAME=postgres 
+      - DB_PASSWORD=postgres
+      - APP_KEY=base64:4hxBznThXkMXkfTbdS/RP0o1VGuyxvXJM/e4OFI1QGc=
+    links:
+      - cachethq-postgres:postgres
+    labels:
+      - "traefik.frontend.rule=Host:$NANOON_CHECK"
+      - "traefik.port=8000"
+      - "traefik.enable=true"
+
+  watchtower:
+    restart: always
+    container_name: watchtower
+    networks:
+      - nanoon
+    image: v2tec/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --cleanup --interval 3600
+
+  portainer:
+    restart: always
+    ports:
+      - "9000:9000"
+    container_name: portainer
+    networks:
+      - nanoon
+    image: portainer/portainer
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - $NANOON_CONFIGDIR/portainer:/data
+
+networks:
+  nanoon:
+    external:
+      name: traefik_nanoon
+
