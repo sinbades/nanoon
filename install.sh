@@ -2,9 +2,9 @@
 
 export NANOON_CONFIGDIR=/home/nanoon/conf ##CHANGE THIS
 export NANOON_FILESDIR=/home/nanoon/file ##CHANGE THAT
+export NANOON_DOMAIN=nanoon.org #AND THIS ONE
 export LETS_ENCRYPT_EMAIL=nanoon@nanoon.com ##AND THIS ONE TOO
-
-export NANOON_DOMAIN=nanoon.org
+INTERFACE=eth0
 
 export NANOON_CHAT=chat.$NANOON_DOMAIN
 export NANOON_BOOK=book.$NANOON_DOMAIN
@@ -56,6 +56,7 @@ sed -i -e "s/nextcloud_hostname/$NANOON_CLOUD/g" $NANOON_CONFIGDIR/collabora/loo
 cp baseConfig/taiga/conf.json $NANOON_CONFIGDIR/taiga/conf.json
 sed -i -e "s/taiga_hostname/$NANOON_TAIGA/g" $NANOON_CONFIGDIR/taiga/conf.json
 
+#openvpn check, copy and configur
 openvpnConf=$NANOON_CONFIGDIR/openvpn/openvpn.conf
 if [ ! -f "$openvpnConf" ]; then
  echo "Init vpn config"
@@ -65,6 +66,7 @@ docker run -v $NANOON_CONFIGDIR/openvpn/:/etc/openvpn --rm kylemanna/openvpn ovp
 docker run -v $NANOON_CONFIGDIR/openvpn/:/etc/openvpn --rm -it kylemanna/openvpn ovpn_initpki
 fi
 
+#traefik check, copy and configure
 traefikConf=$NANOON_CONFIGDIR/traefik/traefik.toml
 if [ ! -f "$traefikConf" ]; then
  mkdir -p $NANOON_CONFIGDIR/traefik
@@ -76,34 +78,49 @@ if [ ! -f "$traefikConf" ]; then
  chmod 600 $NANOON_CONFIGDIR/traefik/acme/acme.json
 fi
 
+#sslh check, copy and configure
+sslhConf=$NANOON_CONFIGDIR/sslh/startsslh.sh
+if [ ! -f "$sslhConf" ]; then
+ mkdir -p $NANOON_CONFIGDIR/sslh
+ cp baseConfig/sslh/startsslh.sh $NANOON_CONFIGDIR/sslh/startsslh.sh
+ HOST=$(sudo ifconfig $INTERFACE | grep inet | awk '{ print $2 }' | cut -d: -f2)
+ sed -i -e "s/host_sslh/${HOST}/g" $NANOON_CONFIGDIR/sslh/startsslh.sh
+ chmod 655 $NANOON_CONFIGDIR/sslh/startsslh.sh
+fi
+
 cd traefik
-docker-compose up -d
+docker-compose up -d --remove-orphans
 cd ..
 
 cd monitor
-docker-compose up -d
+docker-compose up -d --remove-orphans
 cd ..
 
 cd download
-docker-compose up -d
+docker-compose up -d --remove-orphans
 cd ..
 
 cd privacy
-docker-compose up -d
+docker-compose up -d --remove-orphans
 cd ..
 
 cd media
-docker-compose up -d
+docker-compose up -d --remove-orphans
 cd ..
 
 cd vpn
-docker-compose up -d
+docker-compose up -d --remove-orphans
 cd ..
 
 cd dev
-docker-compose up -d
+docker-compose up -d --remove-orphans
 cd ..
 
 cd searx
-docker-compose up -d
+docker-compose up -d --remove-orphans
 cd ..
+
+cd sslh
+docker-compose up -d --remove-orphans
+cd ..
+

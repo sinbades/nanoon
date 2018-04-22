@@ -11,7 +11,7 @@ services:
       - TZ=Europe/Paris
       - POSTGRES_DB=giteadb
       - POSTGRES_USER=gitea
-      - POSTGRES_PASSWORD=giteadb
+      - POSTGRES_PASSWORD=diesel1792
     volumes:
       - $NANOON_CONFIGDIR/gitea-postgres:/var/lib/postgresql/data
 
@@ -24,7 +24,7 @@ services:
       - nanoon
     ports:
       - "8787:3000"
-      - "10022:22"
+      - "22222:22222"
     depends_on:
       - gitea-db
     environment:

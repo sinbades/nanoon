@@ -16,6 +16,7 @@ services:
       - $NANOON_CONFIGDIR/rocketchat-mongo/:/data/db
 
   rocketchat:
+    #image: rocket.chat:0.62.0
     image: rocket.chat
     restart: always
     container_name: rocketchat
@@ -41,7 +42,7 @@ services:
     networks:
       - nanoon
     environment:
-      - MYSQL_ROOT_PASSWORD=dbpass
+      - MYSQL_ROOT_PASSWORD=dbpass 
       - MYSQL_DATABASE=nextcloud 
       - MYSQL_USER=nextcloud 
       - MYSQL_PASSWORD=dbpass
@@ -115,7 +116,7 @@ services:
       - $NANOON_FILESDIR/:/Files
 
   cron:
-    image: nextcloud
+    image: nextcloud:fpm
     container_name: cron
     restart: always
     volumes_from:
@@ -156,7 +157,7 @@ services:
     networks:
       - nanoon
     environment:
-      - MYSQL_ROOT_PASSWORD=dbpass
+      - MYSQL_ROOT_PASSWORD=dbpass 
       - TZ=Europe/Paris 
     volumes:
       - $NANOON_CONFIGDIR/db_wallabag/datadir:/var/lib/mysql

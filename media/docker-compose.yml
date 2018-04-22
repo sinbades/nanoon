@@ -45,26 +45,6 @@ services:
      - "traefik.port=8096"
      - "traefik.enable=true"
 
-  couchpotato:
-    container_name: couchpotato
-    restart: always
-    image: linuxserver/couchpotato
-    ports:
-      - "5050:5050"
-    networks:
-      - nanoon
-    environment:
-      - PUID=1000
-      - PGID=100
-      - TZ=Europe/Paris
-    volumes:
-     - $NANOON_FILESDIR:/media
-     - $NANOON_CONFIGDIR/couchpotato/:/config
-    labels:
-     - "traefik.frontend.rule=Host:$NANOON_MOVIE"
-     - "traefik.port=5050"
-     - "traefik.enable=true"
-
   htpcmanager:
     container_name: htpcmanager
     restart: always
@@ -79,17 +59,13 @@ services:
       - TZ=Europe/Paris
     volumes:
      - $NANOON_CONFIGDIR/htpcmanager/:/config
-    #labels:
-    # - "traefik.frontend.rule=Host:movie.nesven.eu"
-    # - "traefik.port=5050"
-    # - "traefik.enable=true"
 
-  sickrage:
-    container_name: sickrage
+  lidarr:
+    container_name: lidarr
     restart: always
-    image: linuxserver/sickrage
+    image: linuxserver/lidarr
     ports:
-      - "8081:8081"
+      - "7777:8686"
     networks:
       - nanoon
     environment:
@@ -97,11 +73,54 @@ services:
       - PGID=100
       - TZ=Europe/Paris
     volumes:
-     - $NANOON_FILESDIR:/media
-     - $NANOON_CONFIGDIR/sickrage/:/config
+      - $NANOON_FILESDIR/Music/:/music
+      - $NANOON_FILESDIR/Transmission:/downloads
+      - $NANOON_CONFIGDIR/lidarr:/config
+    labels:
+     - "traefik.frontend.rule=Host:$NANOON_MUSIC"
+     - "traefik.port=8686"
+     - "traefik.enable=true"
+
+  radarr:
+    container_name: radarr
+    restart: always
+    image: linuxserver/radarr
+    ports:
+      - "7778:7878"
+    networks:
+      - nanoon
+    environment:
+      - PUID=1000
+      - PGID=100
+      - TZ=Europe/Paris
+    volumes:
+      - $NANOON_FILESDIR/Movies/:/movies
+      - $NANOON_FILESDIR/Transmission:/downloads
+      - $NANOON_CONFIGDIR/radarr:/config
+    labels:
+     - "traefik.frontend.rule=Host:$NANOON_MOVIE"
+     - "traefik.port=7878"
+     - "traefik.enable=true"
+
+  sonarr:
+    container_name: sonarr
+    restart: always
+    image: linuxserver/sonarr
+    ports:
+      - "7779:8989"
+    networks:
+      - nanoon
+    environment:
+      - PUID=1000
+      - PGID=100
+      - TZ=Europe/Paris
+    volumes:
+      - $NANOON_FILESDIR/Shows/:/tv
+      - $NANOON_FILESDIR/Transmission:/downloads
+      - $NANOON_CONFIGDIR/sonarr:/config
     labels:
      - "traefik.frontend.rule=Host:$NANOON_SHOW"
-     - "traefik.port=8081"
+     - "traefik.port=8989"
      - "traefik.enable=true"
 
   jackett:
@@ -123,27 +142,6 @@ services:
      #- "traefik.frontend.rule=Host:movie.nesven.eu"
      #- "traefik.port=5050"
      #- "traefik.enable=true"
-
-  headphones:
-    container_name: headphones
-    restart: always
-    image: linuxserver/headphones
-    ports:
-      - "8181:8181"
-    networks:
-      - nanoon
-    environment:
-      - PUID=1000
-      - PGID=100
-      - TZ=Europe/Paris
-    volumes:
-     - $NANOON_FILESDIR/Transmission/:/downloads 
-     - $NANOON_FILESDIR/Music/:/music
-     - $NANOON_CONFIGDIR/headphones/:/config
-    labels:
-     - "traefik.frontend.rule=Host:$NANOON_MUSIC"
-     - "traefik.port=8181"
-     - "traefik.enable=true"
 
   lazylibrarian:
     container_name: lazylibrarian
