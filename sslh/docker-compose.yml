@@ -1,0 +1,22 @@
+version: '2'
+services:
+
+  sslh:
+    image: shaddysignal/sslh-hub
+    container_name : sslh
+    restart: always
+    entrypoint : /startsslh.sh
+    ports:
+      - 443:443 
+    networks:
+      - nanoon
+    volumes:
+      - $NANOON_CONFIGDIR/sslh/startsslh.sh:/startsslh.sh
+    cap_add:
+      - NET_ADMIN
+
+networks:
+  nanoon:
+    external:
+      name: traefik_nanoon
+
