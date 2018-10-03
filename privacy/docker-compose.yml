@@ -37,8 +37,9 @@ services:
 
   db_nextcloud:
     restart: always
-    image: mariadb:10
+    image: mariadb
     container_name: db_nextcloud
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
     networks:
       - nanoon
     environment:
@@ -100,55 +101,67 @@ services:
   nextcloud:
     restart: always
     container_name: nextcloud
-    image: nextcloud:fpm
+    image: nextcloud:14
     networks:
       - nanoon
+    ports:
+      - 8889:80
     links:
       - db_nextcloud:db_nextcloud 
       - redis-nextcloud:redis
       - solr
     environment:
-      - TZ=Europe/Paris  
+      - TZ=Europe/Paris
+      - APACHE_REFERRER_POLICY=no-referrer
     volumes:
       - $NANOON_FILESDIR/Cloud/data/:/var/www/html/data
       - $NANOON_FILESDIR/Cloud/apps:/var/www/html/apps
       - $NANOON_CONFIGDIR/nextcloud/:/var/www/html/config 
       - $NANOON_FILESDIR/:/Files
+    labels:
+      - "traefik.frontend.rule=Host:$NANOON_CLOUD"
+      - "traefik.port=80"
+      - "traefik.enable=true"
+
 
   cron:
-    image: nextcloud:fpm
+    image: nextcloud:14-fpm
     container_name: cron
     restart: always
     volumes_from:
-      - nextcloud
-    links:
-      - db_nextcloud
-    depends_on:
-      - nextcloud
+     - nextcloud
+    #links:
+    #  - db_nextcloud
+    #  - redis-nextcloud:redis
+    #  - nextcloud
+    #depends_on:
+    #  - nextcloud
+   # volumes:
+    #  - nextcloud:/var/www/html
     entrypoint: /cron.sh 
     networks:
      - nanoon
 
-  nginx-nextcloud:
-    image: nginx:alpine
-    container_name: nginx-nextcloud
-    restart: always
-    networks:
-      - nanoon 
-    ports:
-      - 8889:80
-    links:
-      - nextcloud
-    volumes:
-      - $NANOON_CONFIGDIR/nginx-nextcloud/nginx.conf:/etc/nginx/nginx.conf:ro
-    volumes_from:
-      - nextcloud
-    depends_on: 
-      - nextcloud
-    labels:
-     - "traefik.frontend.rule=Host:$NANOON_CLOUD"
-     - "traefik.port=80"
-     - "traefik.enable=true"
+  #nginx-nextcloud:
+  #  image: nginx:alpine
+  #  container_name: nginx-nextcloud
+  #  restart: always
+  #  networks:
+  #    - nanoon 
+  #  ports:
+  #    - 8889:80
+  #  #links:
+  #  #  - nextcloud
+  #  volumes:
+  #    - $NANOON_CONFIGDIR/nginx-nextcloud/nginx.conf:/etc/nginx/nginx.conf:ro
+  #  volumes_from:
+  #    - nextcloud
+  #  depends_on: 
+  #    - nextcloud
+  #  labels:
+  #   - "traefik.frontend.rule=Host:$NANOON_CLOUD"
+  #   - "traefik.port=80"
+  #   - "traefik.enable=true"
 
   db_wallabag:
     image: mariadb
@@ -273,7 +286,7 @@ services:
       - TZ=Europe/Paris
     labels:
       - "traefik.frontend.rule=Host:$NANOON_TAIGA;PathPrefixStrip:/events"
-      - "traefik.port=80"
+      - "traefik.port=8888"
       - "traefik.enable=true"
 
   taiga:
@@ -302,6 +315,7 @@ services:
     volumes:
       - $NANOON_FILESDIR/Taiga-media:/usr/src/taiga-back/media 
       - $NANOON_CONFIGDIR/taiga:/taiga:ro
+      - $NANOON_CONFIGDIR/taiga/celery.py:/usr/src/taiga-back/settings/celery.py:ro
     labels:
       - "traefik.frontend.rule=Host:$NANOON_TAIGA"
       - "traefik.port=80"

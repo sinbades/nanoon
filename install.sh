@@ -32,19 +32,19 @@ export NANOON_DOWNLOAD=download.$NANOON_DOMAIN
 export NANOON_WEBMAIL=webmail.$NANOON_DOMAIN
 export NANOON_TV=tv.$NANOON_DOMAIN
 export NANOON_MEDIA=media.$NANOON_DOMAIN
+export NANOON_SPEED=speed.$NANOON_DOMAIN
+export NANOON_GAME=game.$NANOON_DOMAIN
+export NANOON_VIDEO=video.$NANOON_DOMAIN
 
 mkdir -p $NANOON_CONFIGDIR
 mkdir -p $NANOON_FILESDIR
 mkdir -p $NANOON_FILESDIR/Solr/mycores
 mkdir -p $NANOON_CONFIGDIR/collabora/
 chown 8983:8983 $NANOON_FILESDIR/Solr/
-mkdir -p $NANOON_CONFIGDIR/nginx-nextcloud/
 mkdir -p $NANOON_CONFIGDIR/nextcloud/
 mkdir -p $NANOON_FILESDIR/Cloud/
 mkdir -p $NANOON_CONFIGDIR/taiga/
 mkdir -p $NANOON_FILESDIR/Cloud/custom_apps
-
-cp baseConfig/nginx-nextcloud/nginx.conf $NANOON_CONFIGDIR/nginx-nextcloud/nginx.conf
 
 chown -R www-data:www-data $NANOON_CONFIGDIR/nextcloud/
 chown -R www-data:www-data $NANOON_FILESDIR/Cloud/
@@ -55,6 +55,7 @@ sed -i -e "s/nextcloud_hostname/$NANOON_CLOUD/g" $NANOON_CONFIGDIR/collabora/loo
 
 cp baseConfig/taiga/conf.json $NANOON_CONFIGDIR/taiga/conf.json
 sed -i -e "s/taiga_hostname/$NANOON_TAIGA/g" $NANOON_CONFIGDIR/taiga/conf.json
+cp baseConfig/taiga/celery.py $NANOON_CONFIGDIR/taiga/celery.py
 
 #openvpn check, copy and configur
 openvpnConf=$NANOON_CONFIGDIR/openvpn/openvpn.conf
@@ -87,6 +88,7 @@ if [ ! -f "$sslhConf" ]; then
  sed -i -e "s/host_sslh/${HOST}/g" $NANOON_CONFIGDIR/sslh/startsslh.sh
  chmod 655 $NANOON_CONFIGDIR/sslh/startsslh.sh
 fi
+
 
 cd traefik
 docker-compose up -d --remove-orphans
@@ -121,6 +123,29 @@ docker-compose up -d --remove-orphans
 cd ..
 
 cd sslh
+docker-compose up -d --remove-orphans
+cd ..
+
+cd mailserver
+docker-compose up -d --remove-orphans
+cd ..
+
+#cd mastodon
+#docker-compose run --rm mastodon-web bundle exec rake mastodon:setup
+#docker-compose run --rm mastodon-web bundle exec rake db:migrate
+#docker-compose run --rm mastodon-web bundle exec rake assets:precompile
+#docker-compose up -d --remove-orphans
+#cd ..
+
+cd diaspora
+docker-compose up -d --remove-orphans
+cd ..
+
+cd retroarch
+docker-compose up -d --remove-orphans
+cd ..
+
+cd peertube
 docker-compose up -d --remove-orphans
 cd ..
 

@@ -39,6 +39,19 @@ services:
       - "traefik.port=8000"
       - "traefik.enable=true"
 
+  speedtest:
+    image: adolfintel/speedtest
+    restart: always
+    container_name: speedtest
+    ports:
+      - "8065:80"
+    networks:
+      - nanoon
+    labels:
+      - "traefik.frontend.rule=Host:$NANOON_SPEED"
+      - "traefik.port=80"
+      - "traefik.enable=true"
+
   watchtower:
     restart: always
     container_name: watchtower

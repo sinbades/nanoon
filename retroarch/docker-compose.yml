@@ -1,0 +1,21 @@
+version: '2'
+services:
+
+ retroarch:
+   container_name: retroarch
+   image: inglebard/retroarch-web
+   networks:
+     - nanoon
+   ports:
+     - "8066:80"
+   labels:
+     - "traefik.frontend.rule=Host:$NANOON_GAME"
+     - "traefik.port=80"
+     - "traefik.enable=true"
+   restart: "always"
+
+networks:
+  nanoon:
+    external:
+      name: traefik_nanoon
+

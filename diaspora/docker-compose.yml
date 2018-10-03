@@ -1,0 +1,68 @@
+version: '2'
+services:
+
+  diaspora:
+    image: koehn/diaspora
+    container_name: diaspora
+    links:
+      - diaspora-postgres
+      - diaspora-redis
+    networks:
+      - nanoon
+    volumes:
+      - $NANOON_FILESDIR/diaspora-images:/home/diaspora/diaspora/public/uploads/images
+      - $NANOON_CONFIGDIR/diaspora/startup.sh:/home/diaspora/diaspora/startup.sh:ro
+      - $NANOON_CONFIGDIR/diaspora/diaspora.yml:/home/diaspora/diaspora/config/diaspora.yml
+      - $NANOON_CONFIGDIR/diaspora/database.yml:/home/diaspora/diaspora/config/database.yml
+    ports:
+      - '3000:3000'
+    labels:
+      - "traefik.frontend.rule=Host:$NANOON_SOCIAL"
+      - "traefik.port=3000"
+      - "traefik.enable=true"
+    restart: always
+
+  diaspora-postgres:
+    mem_limit: 8G
+    container_name: diaspora-postgres
+    image: postgres:10.2-alpine
+    networks:
+      - nanoon
+    tmpfs:
+    - /tmp
+    environment:
+      - POSTGRES_USER=diaspora
+      - POSTGRES_PASSWORD=somepassword
+      - POSTGRES_DB=diaspora_production
+    volumes:
+      #- diaspora-postgres:/var/lib/postgresql/data
+      - $NANOON_CONFIGDIR/diaspora-postgres:/var/lib/postgresql/data
+    restart: always
+
+  diaspora-redis:
+    image: redis:latest
+    container_name: diaspora-redis
+    mem_limit: 384M
+    read_only: true
+    networks:
+      - nanoon
+    tmpfs:
+    - /tmp
+    command: redis-server --appendonly yes
+    volumes:
+      #- $NANOON_FILESDIR/Taiga-media:/usr/src/taiga-back/media
+      #- $NANOON_CONFIGDIR/taiga:/taiga:ro
+      - $NANOON_CONFIGDIR/diaspora-redis:/data
+    restart: always
+
+volumes:
+  diaspora-images:
+  diaspora-postgres:
+  diaspora-postgres-run:
+  diaspora-redis:
+
+networks:
+  nanoon:
+    external:
+      name: traefik_nanoon
+

@@ -1,0 +1,136 @@
+version: '2'
+
+services:
+  mailserver:
+    image: hardware/mailserver:1.1-stable
+    container_name: mailserver
+    domainname: $NANOON_DOMAIN     # Mail server FQDN & reverse = mail.domain.tld.
+    hostname: mail
+    networks:
+      - nanoon 
+    restart: always
+    # extra_hosts:                        - Required for external database (on other server or for local database on host)
+    #  - "mariadb:xx.xx.xx.xx"            - Replace with IP address of MariaDB server
+    ports:
+      - "25:25"     # SMTP                - Required
+    # - "110:110"   # POP3       STARTTLS - Optional - For webmails/desktop clients
+      - "143:143"   # IMAP       STARTTLS - Optional - For webmails/desktop clients
+    # - "465:465"   # SMTPS      SSL/TLS  - Optional - Enabled for compatibility reason, otherwise disabled
+      - "587:587"   # Submission STARTTLS - Optional - For webmails/desktop clients
+      - "993:993"   # IMAPS      SSL/TLS  - Optional - For webmails/desktop clients
+    # - "995:995"   # POP3S      SSL/TLS  - Optional - For webmails/desktop clients
+      - "4190:4190" # SIEVE      STARTTLS - Optional - Recommended for mail filtering
+    environment:
+      - DBHOST=mailserver_db
+      - REDIS_HOST=redis-mail
+      - DBPASS=xxxxxxx
+      - RSPAMD_PASSWORD=xxxxxxx
+      - ENABLE_FETCHMAIL=true
+    # - ENABLE_POP3=true          # Enable POP3 protocol
+    # - GREYLISTING=gross         # Enable gross greylisting policy server
+    # - DISABLE_CLAMAV=true       # Disable virus scanning
+    # - DISABLE_SPAMASSASSIN=true # Disable SPAM checking
+    # - DISABLE_SIEVE=true        # Disable ManageSieve protocol
+    volumes:
+      - $NANOON_FILESDIR/mailserver/mail:/var/mail
+      - $NANOON_FILESDIR/mailserver/mail/postfix/sasl:/etc/postfix/sasl
+      - $NANOON_FILESDIR/mailserver/mail/opendkim:/etc/opendkim/keys
+    # - /etc/localtime:/etc/localtime:ro               # Use host OS timezone
+    depends_on:
+      - mailserver_db
+      - redis-mail
+
+  redis-mail:
+    image: redis:3.2-alpine
+    container_name: redis-mail
+    command: redis-server --appendonly yes
+    restart: always
+    networks:
+      - nanoon
+    volumes:
+      - $NANOON_FILESDIR/mailserver/redis/db:/data
+
+
+  # Administration interface
+  # https://github.com/hardware/postfixadmin
+  # http://postfixadmin.sourceforge.net/
+  # Configuration : https://github.com/hardware/mailserver/wiki/Postfixadmin-initial-configuration
+  postfixadmin:
+    image: hardware/postfixadmin
+    container_name: postfixadmin
+    domainname: $NANOON_DOMAIN
+    hostname: mail
+    restart: always
+    networks:
+      - nanoon
+    ports:
+      - "8086:8888"
+    environment:
+      - DBHOST=mailserver_db
+      - DBPASS=xxxxxxx
+    depends_on:
+      - mailserver
+      - mailserver_db
+
+  # Webmail (Optional)
+  # https://github.com/hardware/rainloop
+  # https://www.rainloop.net/
+  # Configuration : https://github.com/hardware/mailserver/wiki/Rainloop-initial-configuration
+  rainloop:
+    image: hardware/rainloop
+    container_name: rainloop
+    restart: always
+    networks:
+      - nanoon
+    ports:
+      - "8087:8888"
+    volumes:
+      - $NANOON_FILESDIR/mailserver/rainloop:/rainloop/data
+    # - /etc/localtime:/etc/localtime:ro               # Use host OS timezone
+    depends_on:
+      - mailserver
+      - mailserver_db
+    labels:
+      - "traefik.frontend.rule=Host:$NANOON_WEBMAIL"
+      - "traefik.backend=webmailBackend"
+      - "traefik.port=8888"
+      - "traefik.enable=true"
+
+  # Authoritative DNS server (Optional)
+  # https://github.com/hardware/nsd-dnssec
+  # https://www.nlnetlabs.nl/projects/nsd/
+  # Configuration : https://github.com/hardware/mailserver/wiki/NSD-initial-configuration
+  #nsd:
+  #  image: hardware/nsd-dnssec
+  #  container_name: nsd
+  #  restart: always
+  #  networks:
+  #    - nanoon
+  #  ports:
+  #    - "53:53"
+  #    - "53:53/udp"
+  #  volumes:
+  #    - $NANOON_FILESDIR/mailserver/nsd/conf:/etc/nsd
+  #    - $NANOON_FILESDIR/mailserver/nsd/zones:/zones
+  #    - $NANOON_FILESDIR/mailserver/nsd/db:/var/db/nsd
+
+  mailserver_db:
+    image: mariadb:10.2
+    container_name: mailserver_db
+    restart: always
+    networks:
+      - nanoon
+    # Info : These variables are ignored when the volume already exists (databases created before).
+    environment:
+      - MYSQL_ROOT_PASSWORD=xxxxxxx
+      - MYSQL_DATABASE=postfix
+      - MYSQL_USER=postfix
+      - MYSQL_PASSWORD=xxxxxxx
+    volumes:
+      - $NANOON_FILESDIR/mailserver/mysql/db:/var/lib/mysql
+
+networks:
+  nanoon:
+    external:
+      name: traefik_nanoon
+

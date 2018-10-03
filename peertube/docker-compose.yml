@@ -1,0 +1,54 @@
+version: '2'
+services:
+
+ peertube:
+   container_name: peertube
+   image: chocobozzz/peertube:production-stretch
+   env_file: .env
+   environment:
+      - PEERTUBE_WEBSERVER_HOSTNAME=$NANOON_VIDEO
+    # Traefik labels are suggested as an example for people using Traefik,
+    # remove them if you are using another reverse proxy.
+   labels:
+     - "traefik.enable=true"
+     - "traefik.frontend.rule=Host:$NANOON_VIDEO"
+     - "traefik.port=9000"
+   networks:
+     - nanoon
+   ports:
+     - "9900:9000"
+   volumes:
+     - $NANOON_FILESDIR/peertube:/data
+     - $NANOON_CONFIGDIR/peertube:/config
+   depends_on:
+     - peertube-postgres
+     - peertube-redis
+   restart: "always"
+
+ peertube-postgres:
+   container_name: peertube-postgres
+   image: postgres:10-alpine
+   networks:
+     - nanoon
+   environment:
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=peertube
+   volumes:
+      - $NANOON_CONFIGDIR/peertube-postgres:/var/lib/postgresql/data
+   restart: "always"
+
+ peertube-redis:
+   container_name: peertube-redis
+   image: redis:4-alpine
+   networks:
+     - nanoon
+   volumes:
+     -  $NANOON_CONFIGDIR/peertube-redis:/data
+   restart: "always"
+
+networks:
+  nanoon:
+    external:
+      name: traefik_nanoon
+
