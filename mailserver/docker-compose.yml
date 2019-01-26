@@ -9,6 +9,7 @@ services:
     networks:
       - nanoon 
     restart: always
+    mem_limit: 512M
     # extra_hosts:                        - Required for external database (on other server or for local database on host)
     #  - "mariadb:xx.xx.xx.xx"            - Replace with IP address of MariaDB server
     ports:

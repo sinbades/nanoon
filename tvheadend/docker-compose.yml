@@ -1,0 +1,30 @@
+version: '2'
+services:
+
+  tvheadend:
+    container_name: tvheadend
+    image: linuxserver/tvheadend
+    restart: always
+    ports:
+      - "9981:9981"
+      - "9982:9982"
+    networks:
+      - nanoon
+    environment:
+      - PGID=$NANOON_GID
+      - PUID=$NANOON_UID
+      - TZ=Europe/Paris
+    volumes:
+     - $NANOON_FILESDIR:/media
+     - $NANOON_CONFIGDIR/tvheadend/:/config
+    labels:
+     - "traefik.frontend.rule=Host:$NANOON_TV"
+     - "traefik.port=9981"
+     - "traefik.enable=true"
+    #devices:
+     # - /dev/dvb:/dev/dvb
+
+networks:
+  nanoon:
+    external:
+      name: traefik_nanoon

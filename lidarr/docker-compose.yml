@@ -1,0 +1,30 @@
+version: '2'
+services:
+
+ lidarr:
+    mem_limit: 384M
+    container_name: lidarr
+    restart: always
+    image: linuxserver/lidarr
+    ports:
+      - "7777:8686"
+    networks:
+      - nanoon
+    environment:
+      - PGID=$NANOON_GID
+      - PUID=$NANOON_UID
+      - TZ=Europe/Paris
+    volumes:
+      - $NANOON_FILESDIR/Music/:/music
+      - $NANOON_FILESDIR/Transmission:/downloads
+      - $NANOON_CONFIGDIR/lidarr:/config
+      - $NANOON_BACKUPDIR/lidarr:/config/Backups
+    labels:
+     - "traefik.frontend.rule=Host:$NANOON_MUSIC"
+     - "traefik.port=8686"
+     - "traefik.enable=true"
+
+networks:
+  nanoon:
+    external:
+      name: traefik_nanoon

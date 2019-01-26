@@ -12,8 +12,8 @@ services:
     networks:
       - nanoon
     environment:
-      - PGID=100
-      - PUID=1000
+      - PGID=$NANOON_GID
+      - PUID=$NANOON_UID
       - TZ=Europe/Paris
     volumes:
       - $NANOON_CONFIGDIR/transmission/:/config
@@ -23,26 +23,6 @@ services:
     labels:
      - "traefik.frontend.rule=Host:$NANOON_TORRENT"
      - "traefik.port=9091"
-     - "traefik.enable=true"
-
-  pyload:
-    image: writl/pyload
-    container_name: pyload
-    restart: always
-    ports:
-      - "9092:8000"
-    networks:
-      - nanoon
-    environment:
-      - PGID=100
-      - PUID=1000
-      - TZ=Europe/Paris
-    volumes:
-     - $NANOON_FILESDIR/Downloads/:/opt/pyload/Downloads
-     - $NANOON_CONFIGDIR/pyload/:/opt/pyload/pyload-config
-    labels:
-     - "traefik.frontend.rule=Host:$NANOON_DOWNLOAD"
-     - "traefik.port=8000"
      - "traefik.enable=true"
 
 networks:

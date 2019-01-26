@@ -1,0 +1,54 @@
+version: '2'
+services:
+
+  db_wallabag:
+    image: mariadb
+    container_name: db_wallabag
+    restart: always
+    networks:
+      - nanoon
+    environment:
+      - MYSQL_ROOT_PASSWORD=dbpass 
+      - TZ=Europe/Paris 
+    volumes:
+      - $NANOON_CONFIGDIR/db_wallabag/datadir:/var/lib/mysql
+
+  wallabag-redis:
+    image: redis:alpine
+    container_name: wallabag-redis
+    restart: always
+    networks:
+      - nanoon
+    environment:
+      - TZ=Europe/Paris
+
+  wallabag:
+    container_name: wallabag
+    image: wallabag/wallabag
+    restart: always
+    ports:
+      - "8084:80"
+    networks:
+      - nanoon
+    environment:
+      - "MYSQL_ROOT_PASSWORD=dbpass"
+      - "SYMFONY__ENV__DATABASE_DRIVER=pdo_mysql"
+      - "SYMFONY__ENV__DATABASE_HOST=wallabag-db"
+      - "SYMFONY__ENV__DATABASE_PORT=3306"
+      - "SYMFONY__ENV__DATABASE_NAME=wallabag"
+      - "SYMFONY__ENV__DATABASE_USER=wallabag"
+      - "SYMFONY__ENV__DATABASE_PASSWORD=wallapass"
+      - "SYMFONY__ENV__DOMAIN_NAME=https://$NANOON_SAVE"
+    links:
+      - db_wallabag:wallabag-db 
+      - wallabag-redis:redis
+    labels:
+     - "traefik.frontend.rule=Host:$NANOON_SAVE"
+     - "traefik.port=80"
+     - "traefik.enable=true"
+
+networks:
+  nanoon:
+    external:
+      name: traefik_nanoon
+

@@ -48,7 +48,8 @@ How to use this:
 What works so far:
 - Installation : install dependencies then run install.sh
 - Removal: not done. Use docker to clean all containers and images then remove install and config directories. (commands are easy to find online)
-- Reinstall: not done. Import you save data in the correct configuration directory. (worked several times for me)
+- Backup: use backup.sh
+- Reinstall: not done. Import you save data in the correct configuration directory.
 - Upgrade: automatic using docker watchtower image.
 
 Usage issues:
@@ -60,10 +61,6 @@ Usage issues:
 
 Where will it go:
 I plan to add more containers depending for my own needs.
- - In testing:
-   - mastodon
-   - diaspora
-   - playmaker
    
 I plan to test only servers with mail integration I consider necessary. 
 My test machine is also a linux htpc gaming VFIO remote gaming.

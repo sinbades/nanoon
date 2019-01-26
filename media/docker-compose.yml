@@ -1,50 +1,6 @@
 version: '2'
 services:
 
-  tvheadend:
-    container_name: tvheadend
-    image: linuxserver/tvheadend
-    restart: always
-    ports:
-      - "9981:9981"
-      - "9982:9982"
-    networks:
-      - nanoon
-    environment:
-      - PUID=1000
-      - PGID=100
-      - TZ=Europe/Paris
-    volumes:
-     - $NANOON_FILESDIR:/media
-     - $NANOON_CONFIGDIR/tvheadend/:/config
-    labels:
-     - "traefik.frontend.rule=Host:$NANOON_TV"
-     - "traefik.port=9981"
-     - "traefik.enable=true"
-    #devices:
-     # - /dev/dvb:/dev/dvb
-
-  emby:
-    container_name: emby
-    image: emby/embyserver
-    restart: always
-    ports:
-      - "8096:8096"
-    networks:
-      - nanoon
-    environment:
-      - UID=1000
-      - GID=100
-      - GIDLIST=4 
-      - TZ=Europe/Paris
-    volumes:
-     - $NANOON_FILESDIR:/media
-     - $NANOON_CONFIGDIR/emby/:/config
-    labels:
-     - "traefik.frontend.rule=Host:$NANOON_PLAY"
-     - "traefik.port=8096"
-     - "traefik.enable=true"
-
   htpcmanager:
     container_name: htpcmanager
     restart: always
@@ -54,94 +10,11 @@ services:
     networks:
       - nanoon
     environment:
-      - PUID=1000
-      - PGID=100
+      - PGID=$NANOON_GID
+      - PUID=$NANOON_UID
       - TZ=Europe/Paris
     volumes:
      - $NANOON_CONFIGDIR/htpcmanager/:/config
-
-  lidarr:
-    container_name: lidarr
-    restart: always
-    image: linuxserver/lidarr
-    ports:
-      - "7777:8686"
-    networks:
-      - nanoon
-    environment:
-      - PUID=1000
-      - PGID=100
-      - TZ=Europe/Paris
-    volumes:
-      - $NANOON_FILESDIR/Music/:/music
-      - $NANOON_FILESDIR/Transmission:/downloads
-      - $NANOON_CONFIGDIR/lidarr:/config
-    labels:
-     - "traefik.frontend.rule=Host:$NANOON_MUSIC"
-     - "traefik.port=8686"
-     - "traefik.enable=true"
-
-  radarr:
-    container_name: radarr
-    restart: always
-    image: linuxserver/radarr
-    ports:
-      - "7778:7878"
-    networks:
-      - nanoon
-    environment:
-      - PUID=1000
-      - PGID=100
-      - TZ=Europe/Paris
-    volumes:
-      - $NANOON_FILESDIR/Movies/:/movies
-      - $NANOON_FILESDIR/Transmission:/downloads
-      - $NANOON_CONFIGDIR/radarr:/config
-    labels:
-     - "traefik.frontend.rule=Host:$NANOON_MOVIE"
-     - "traefik.port=7878"
-     - "traefik.enable=true"
-
-  sonarr:
-    container_name: sonarr
-    restart: always
-    image: linuxserver/sonarr
-    ports:
-      - "7779:8989"
-    networks:
-      - nanoon
-    environment:
-      - PUID=1000
-      - PGID=100
-      - TZ=Europe/Paris
-    volumes:
-      - $NANOON_FILESDIR/Shows/:/tv
-      - $NANOON_FILESDIR/Transmission:/downloads
-      - $NANOON_CONFIGDIR/sonarr:/config
-    labels:
-     - "traefik.frontend.rule=Host:$NANOON_SHOW"
-     - "traefik.port=8989"
-     - "traefik.enable=true"
-
-  jackett:
-    container_name: jackett
-    restart: always
-    image: linuxserver/jackett
-    ports:
-      - "9117:9117"
-    networks:
-      - nanoon
-    environment:
-      - PUID=1000
-      - PGID=100
-      - TZ=Europe/Paris
-    volumes:
-     - $NANOON_FILESDIR/Transmission/complete/:/downloads
-     - $NANOON_CONFIGDIR/jackett/:/config
-    #labels:
-     #- "traefik.frontend.rule=Host:movie.nesven.eu"
-     #- "traefik.port=5050"
-     #- "traefik.enable=true"
 
   lazylibrarian:
     container_name: lazylibrarian
@@ -152,8 +25,8 @@ services:
     networks:
       - nanoon
     environment:
-      - PUID=1000
-      - PGID=100
+      - PGID=$NANOON_GID
+      - PUID=$NANOON_UID
       - TZ=Europe/Paris
     volumes:
      - $NANOON_FILESDIR/Transmission/:/downloads
@@ -173,8 +46,8 @@ services:
     networks:
       - nanoon
     environment:
-      - PUID=1000
-      - PGID=100
+      - PGID=$NANOON_GID
+      - PUID=$NANOON_UID
       - TZ=Europe/Paris
     volumes:
      - $NANOON_FILESDIR/Books/:/books
@@ -194,8 +67,8 @@ services:
     networks:
       - nanoon
     environment:
-      - PUID=1000
-      - PGID=100
+      - PGID=$NANOON_GID
+      - PUID=$NANOON_UID
       - TZ=Europe/Paris
     volumes:
      - $NANOON_CONFIGDIR/ombi/:/config

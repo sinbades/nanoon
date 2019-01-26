@@ -1,0 +1,30 @@
+version: '2'
+services:
+
+  radarr:
+    mem_limit: 384M
+    container_name: radarr
+    restart: always
+    image: linuxserver/radarr
+    ports:
+      - "7778:7878"
+    networks:
+      - nanoon
+    environment:
+      - PGID=$NANOON_GID
+      - PUID=$NANOON_UID
+      - TZ=Europe/Paris
+    volumes:
+      - $NANOON_FILESDIR/Movies/:/movies
+      - $NANOON_FILESDIR/Transmission:/downloads
+      - $NANOON_CONFIGDIR/radarr:/config
+      - $NANOON_BACKUPDIR/radarr:/config/Backups
+    labels:
+     - "traefik.frontend.rule=Host:$NANOON_MOVIE"
+     - "traefik.port=7878"
+     - "traefik.enable=true"
+
+networks:
+  nanoon:
+    external:
+      name: traefik_nanoon

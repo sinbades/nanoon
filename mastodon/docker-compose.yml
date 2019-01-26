@@ -1,0 +1,82 @@
+version: '2'
+services:
+
+  mastodon-db:
+    restart: always
+    container_name: mastodon-db
+    image: postgres:10-alpine
+    networks:
+      - nanoon
+    volumes:
+      - $NANOON_CONFIGDIR/mastodon-postgres/:/var/lib/postgresql/data
+
+  mastodon-redis:
+    restart: always
+    container_name: mastodon-redis
+    image: redis:alpine
+    networks:
+      - nanoon
+    volumes:
+      - $NANOON_CONFIGDIR/mastodon-redis:/data
+
+  mastodon-web:
+    #build: .
+    mem_limit: 384M
+    image: tootsuite/mastodon
+    restart: always
+    container_name: mastodon-web
+    env_file: ../envs/mastodon/.env.production
+    command: bash -c "rm -f /mastodon/tmp/pids/server.pid; bundle exec rails s -p 3000 -b '0.0.0.0'"
+    ports:
+      - "3300:3000"
+    networks:
+      - nanoon
+    depends_on:
+      - mastodon-db
+      - mastodon-redis
+    volumes:
+      - $NANOON_FILESDIR/Mastodon/system:/mastodon/public/system
+    labels:
+      - "traefik.frontend.rule=Host:$NANOON_MASTODON"
+      - "traefik.port=3000"
+      - "traefik.enable=true"
+
+  mastodon-streaming:
+    image: tootsuite/mastodon
+    restart: always
+    container_name: mastodon-streaming
+    env_file: ../envs/mastodon/.env.production
+    command: yarn start
+    networks:
+      - nanoon
+    ports:
+      - "4000:4000"
+    depends_on:
+      - mastodon-db
+      - mastodon-redis
+    labels:
+      - "traefik.port=4000"
+      - "traefik.enable=true"
+      - "traefik.frontend.rule=Host:$NANOON_MASTODON;PathPrefixStrip:/api/v1/streaming"
+
+  mastodon-sidekiq:
+    #build: .
+    mem_limit: 384M
+    image: tootsuite/mastodon
+    restart: always
+    container_name: mastodon-sidekiq
+    env_file: ../envs/mastodon/.env.production
+    command: bundle exec sidekiq
+    networks:
+      - nanoon
+    depends_on:
+      - mastodon-db
+      - mastodon-redis
+    volumes:
+      - $NANOON_FILESDIR/Mastodon/system:/mastodon/public/system
+
+
+networks:
+  nanoon:
+    external:
+      name: traefik_nanoon

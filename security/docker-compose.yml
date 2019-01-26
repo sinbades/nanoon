@@ -1,0 +1,14 @@
+version: '2'
+services:
+
+  fail2ban:
+    image: crazymax/fail2ban:latest
+    container_name : fail2ban
+    restart: always
+    volumes:
+      - $NANOON_CONFIGDIR/fail2ban/data:/data
+      - /var/log:/var/log:ro
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    network_mode: host

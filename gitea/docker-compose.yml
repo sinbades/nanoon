@@ -2,7 +2,7 @@ version: '2'
 services:
 
   gitea-db:
-    image: postgres
+    image: postgres:10
     restart: always
     container_name: gitea-db
     networks:
@@ -14,27 +14,6 @@ services:
       - POSTGRES_PASSWORD=diesel1792
     volumes:
       - $NANOON_CONFIGDIR/gitea-postgres:/var/lib/postgresql/data
-
-#  gitlab:
-#    image: gitlab/gitlab-ee
-#    restart: always
-#    container_name: gitlab
-#    networks:
-#      - nanoon
-#    ports:
-#      - "8787:80"
-#      - "22222:22"
-#    environment:
-#      - TZ=Europe/Paris
-#    volumes:
-#      - $NANOON_CONFIGDIR/gitlab/:/etc/gitlab
-#      - $NANOON_CONFIGDIR/gitlab/logs:/var/log/gitlab
-#      - $NANOON_FILESDIR/Git/:/var/opt/gitlab
-#    labels:
-#      - "traefik.frontend.rule=Host:$NANOON_GIT"
-#      - "traefik.port=80"
-#      - "traefik.enable=true"
-
 
   gitea:
     image: gitea/gitea
@@ -61,3 +40,4 @@ networks:
   nanoon:
     external:
       name: traefik_nanoon
+

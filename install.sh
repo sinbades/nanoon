@@ -4,9 +4,11 @@ export NANOON_CONFIGDIR=/home/nanoon/conf ##CHANGE THIS
 export NANOON_FILESDIR=/home/nanoon/file ##CHANGE THAT
 export NANOON_DOMAIN=nanoon.org #AND THIS ONE
 export LETS_ENCRYPT_EMAIL=nanoon@nanoon.com ##AND THIS ONE TOO
+export NANOON_BACKUPDIR=/media/Files/Backup #CHANGE THAT
 INTERFACE=eth0
 
 export NANOON_CHAT=chat.$NANOON_DOMAIN
+export NANOON_CHAT2=chat2.$NANOON_DOMAIN
 export NANOON_BOOK=book.$NANOON_DOMAIN
 export NANOON_CHECK=check.$NANOON_DOMAIN
 export NANOON_CLOUD=cloud.$NANOON_DOMAIN
@@ -35,29 +37,49 @@ export NANOON_MEDIA=media.$NANOON_DOMAIN
 export NANOON_SPEED=speed.$NANOON_DOMAIN
 export NANOON_GAME=game.$NANOON_DOMAIN
 export NANOON_VIDEO=video.$NANOON_DOMAIN
+export NANOON_MEET=meet.$NANOON_DOMAIN
+export NANOON_MATRIX=matrix.$NANOON_DOMAIN
+export NANOON_MATRIXID=id.$NANOON_DOMAIN
 
 mkdir -p $NANOON_CONFIGDIR
 mkdir -p $NANOON_FILESDIR
 mkdir -p $NANOON_FILESDIR/Solr/mycores
 mkdir -p $NANOON_CONFIGDIR/collabora/
 chown 8983:8983 $NANOON_FILESDIR/Solr/
+mkdir -p $NANOON_CONFIGDIR/nginx-nextcloud/
 mkdir -p $NANOON_CONFIGDIR/nextcloud/
 mkdir -p $NANOON_FILESDIR/Cloud/
 mkdir -p $NANOON_CONFIGDIR/taiga/
-mkdir -p $NANOON_FILESDIR/Cloud/custom_apps
 
-chown -R www-data:www-data $NANOON_CONFIGDIR/nextcloud/
-chown -R www-data:www-data $NANOON_FILESDIR/Cloud/
+mkdir -p $NANOON_BACKUPDIR
+mkdir -p $NANOON_CONFIGDIR/radarr
+mkdir -p $NANOON_CONFIGDIR/lidarr
+mkdir -p $NANOON_CONFIGDIR/sonarr
+mkdir -p $NANOON_BACKUPDIR/emby
+
+
+#nextcloud base config
+nextcloudConf=$NANOON_CONFIGDIR/nextcloud/config.php
+if [ ! -f "$nextcloudConf" ]; then
+  touch $NANOON_CONFIGDIR/nextcloud/config.php
+  chown -R 82:82 $NANOON_CONFIGDIR/nextcloud
+  chown -R 82:82 $NANOON_FILESDIR/Cloud
+  docker-compose -f nextcloud/docker-compose.yml run --rm nextcloud chown -R 82:82 /var/www/html/
+fi
+
+cp baseConfig/nginx-nextcloud/nginx.conf $NANOON_CONFIGDIR/nginx-nextcloud/nginx.conf
 
 cp baseConfig/collabora/loolwsd.xml $NANOON_CONFIGDIR/collabora/loolwsd.xml
 sed -i -e "s/collabora_hostname/$NANOON_OFFICE/g" $NANOON_CONFIGDIR/collabora/loolwsd.xml
 sed -i -e "s/nextcloud_hostname/$NANOON_CLOUD/g" $NANOON_CONFIGDIR/collabora/loolwsd.xml
 
+
 cp baseConfig/taiga/conf.json $NANOON_CONFIGDIR/taiga/conf.json
 sed -i -e "s/taiga_hostname/$NANOON_TAIGA/g" $NANOON_CONFIGDIR/taiga/conf.json
 cp baseConfig/taiga/celery.py $NANOON_CONFIGDIR/taiga/celery.py
 
-#openvpn check, copy and configur
+
+#openvpn check, copy and configure
 openvpnConf=$NANOON_CONFIGDIR/openvpn/openvpn.conf
 if [ ! -f "$openvpnConf" ]; then
  echo "Init vpn config"
@@ -89,63 +111,62 @@ if [ ! -f "$sslhConf" ]; then
  chmod 655 $NANOON_CONFIGDIR/sslh/startsslh.sh
 fi
 
+#riot base config
+riotConf=$NANOON_CONFIGDIR/synapse/homeserver.yaml
+if [ ! -f "$riotConf" ]; then
+  docker-compose -f riot/docker-compose.yml run --rm -e SYNAPSE_SERVER_NAME=$NANOON_MATRIX synapse generate
+fi
 
-cd traefik
-docker-compose up -d --remove-orphans
-cd ..
+#mastodon base config
+mastodonConf=$NANOON_FILESDIR/Mastodon/
+if [ ! "$(ls -A $DIR)" ]; then
+  docker-compose -f mastodon/docker-compose.yml run --rm mastodon-web bundle exec rake mastodon:setup
+fi
 
-cd monitor
-docker-compose up -d --remove-orphans
-cd ..
+#diaspora
+#diasporaConf=$NANOON_CONFIGDIR/diaspora/diaspora.yml
+#if [ ! -f "$diasporaConf" ]; then
+#  sed -i -e "s/diaspora_hostname/\"$NANOON_SOCIAL\"/g" $NANOON_CONFIGDIR/diaspora/diaspora.yml
+#fi
 
-cd download
-docker-compose up -d --remove-orphans
-cd ..
 
-cd privacy
-docker-compose up -d --remove-orphans
-cd ..
+docker-compose -f traefik/docker-compose.yml up -d --remove-orphans
 
-cd media
-docker-compose up -d --remove-orphans
-cd ..
+docker-compose -f monitor/docker-compose.yml up -d --remove-orphans
 
-cd vpn
-docker-compose up -d --remove-orphans
-cd ..
+docker-compose -f privacy/docker-compose.yml up -d --remove-orphans
+docker-compose -f nextcloud/docker-compose.yml up -d --remove-orphans
+docker-compose -f wallabag/docker-compose.yml up -d --remove-orphans
+docker-compose -f syncthing/docker-compose.yml up -d --remove-orphans
 
-cd dev
-docker-compose up -d --remove-orphans
-cd ..
+docker-compose -f media/docker-compose.yml up -d --remove-orphans
+docker-compose -f sonarr/docker-compose.yml up -d --remove-orphans
+docker-compose -f radarr/docker-compose.yml up -d --remove-orphans
+docker-compose -f lidarr/docker-compose.yml up -d --remove-orphans
+docker-compose -f emby/docker-compose.yml up -d --remove-orphan
+docker-compose -f jackett/docker-compose.yml up -d --remove-orphan
+#docker-compose -f tvheadend/docker-compose.yml up -d --remove-orphans
 
-cd searx
-docker-compose up -d --remove-orphans
-cd ..
+docker-compose -f vpn/docker-compose.yml up -d --remove-orphans
 
-cd sslh
-docker-compose up -d --remove-orphans
-cd ..
+docker-compose -f searx/docker-compose.yml up -d --remove-orphans
 
-cd mailserver
-docker-compose up -d --remove-orphans
-cd ..
+docker-compose -f sslh/docker-compose.yml up -d --remove-orphans
 
-#cd mastodon
-#docker-compose run --rm mastodon-web bundle exec rake mastodon:setup
-#docker-compose run --rm mastodon-web bundle exec rake db:migrate
-#docker-compose run --rm mastodon-web bundle exec rake assets:precompile
-#docker-compose up -d --remove-orphans
-#cd ..
+docker-compose -f mailserver/docker-compose.yml up -d --remove-orphans
 
-cd diaspora
-docker-compose up -d --remove-orphans
-cd ..
+docker-compose -f mastodon/docker-compose.yml run --rm mastodon-web rails db:migrate
+docker-compose -f mastodon/docker-compose.yml up -d --remove-orphans
 
-cd retroarch
-docker-compose up -d --remove-orphans
-cd ..
+docker-compose -f diaspora/docker-compose.yml up -d --remove-orphans
 
-cd peertube
-docker-compose up -d --remove-orphans
-cd ..
+docker-compose -f retroarch/docker-compose.yml up -d --remove-orphans
+
+docker-compose -f peertube/docker-compose.yml up -d --remove-orphans
+
+docker-compose -f jitsi/docker-compose.yml up -d --remove-orphans
+
+docker-compose -f riot/docker-compose.yml up -d --remove-orphans
+
+docker-compose -f gitea/docker-compose.yml up -d --remove-orphans
 

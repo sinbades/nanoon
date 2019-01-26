@@ -2,6 +2,7 @@ version: '2'
 services:
 
   diaspora:
+    mem_limit: 384M
     image: koehn/diaspora
     container_name: diaspora
     links:
@@ -23,7 +24,7 @@ services:
     restart: always
 
   diaspora-postgres:
-    mem_limit: 8G
+    mem_limit: 384M
     container_name: diaspora-postgres
     image: postgres:10.2-alpine
     networks:
@@ -35,7 +36,6 @@ services:
       - POSTGRES_PASSWORD=somepassword
       - POSTGRES_DB=diaspora_production
     volumes:
-      #- diaspora-postgres:/var/lib/postgresql/data
       - $NANOON_CONFIGDIR/diaspora-postgres:/var/lib/postgresql/data
     restart: always
 
@@ -49,10 +49,10 @@ services:
     tmpfs:
     - /tmp
     command: redis-server --appendonly yes
-    volumes:
+    #volumes:
       #- $NANOON_FILESDIR/Taiga-media:/usr/src/taiga-back/media
       #- $NANOON_CONFIGDIR/taiga:/taiga:ro
-      - $NANOON_CONFIGDIR/diaspora-redis:/data
+      #- $NANOON_CONFIGDIR/diaspora-redis:/data
     restart: always
 
 volumes:

@@ -1,0 +1,29 @@
+version: '2'
+services:
+
+  jackett:
+    mem_limit: 384M
+    container_name: jackett
+    restart: always
+    image: linuxserver/jackett
+    ports:
+      - "9117:9117"
+    networks:
+      - nanoon
+    environment:
+      - PUID=$NANOON_UID
+      - PGID=$NANOON_GID
+      - TZ=Europe/Paris
+    volumes:
+     - $NANOON_FILESDIR/Transmission/complete/:/downloads
+     - $NANOON_CONFIGDIR/jackett/:/config
+    #labels:
+     #- "traefik.frontend.rule=Host:movie.nesven.eu"
+     #- "traefik.port=5050"
+     #- "traefik.enable=true"
+
+networks:
+  nanoon:
+    external:
+      name: traefik_nanoon
+

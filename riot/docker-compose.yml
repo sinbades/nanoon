@@ -1,0 +1,104 @@
+# This compose file is compatible with Compose itself, it might need some
+# adjustments to run properly with stack.
+
+version: '2'
+
+services:
+
+  synapse:
+    #build:
+    #    context: ../..
+    #    dockerfile: docker/Dockerfile
+    #image: docker.io/matrixdotorg/synapse:v0.34.0
+    image: docker.io/matrixdotorg/synapse
+    networks:
+      - nanoon
+    # Since synapse does not retry to connect to the database, restart upon
+    # failure
+    container_name: synapse
+    restart: always
+    # See the readme for a full documentation of the environment settings
+    environment:
+      - SYNAPSE_SERVER_NAME=matrix.nesven.eu
+      - SYNAPSE_REPORT_STATS=no
+      - SYNAPSE_ENABLE_REGISTRATION=yes
+      - SYNAPSE_LOG_LEVEL=INFO
+      - POSTGRES_PASSWORD=changeme
+    volumes:
+      # You may either store all the files in a local folder
+      #- ./files:/data
+      - $NANOON_CONFIGDIR/synapse:/data
+      - $NANOON_CONFIGDIR/synapse/homeserver.yaml:/conf/homeserver.yaml
+      - $NANOON_FILESDIR/synapse-media/uploads:/data/uploads
+      - $NANOON_FILESDIR/synapse-media/media:/data/media
+      # .. or you may split this between different storage points
+      # - ./files:/data
+      # - /path/to/ssd:/data/uploads
+      # - /path/to/large_hdd:/data/media
+    depends_on:
+      - db
+    # In order to expose Synapse, remove one of the following, you might for
+    # instance expose the TLS port directly:
+    ports:
+      - 8448:8448/tcp
+    # ... or use a reverse proxy, here is an example for traefik:
+    labels:
+      - traefik.enable=true
+      - traefik.frontend.rule=Host:$NANOON_MATRIX
+      - traefik.port=8008
+
+  db:
+    image: docker.io/postgres:10-alpine
+    # Change that password, of course!
+    restart: always
+    container_name: synapse-db
+    networks:
+      - nanoon
+    environment:
+      - POSTGRES_USER=synapse
+      - POSTGRES_PASSWORD=changeme
+    volumes:
+      # You may store the database tables in a local folder..
+      #- ./schemas:/var/lib/postgresql/data
+      - $NANOON_CONFIGDIR/synapse-db:/var/lib/postgresql/data
+      # .. or store them on some high performance storage for better results
+      # - /path/to/ssd/storage:/var/lib/postgresql/data
+
+  matrix-identity:
+    image: kamax/mxisd
+    restart: always
+    container_name: matrix-identity
+    networks:
+      - nanoon
+    restart: always
+    volumes:
+      #- ./data/etc:/etc/mixsd
+      #- ./data/var:/var/data
+      - $NANOON_CONFIGDIR/matrixid/etc:/etc/mixsd
+      - $NANOON_CONFIGDIR/matrixid/var:/var/data
+    environment:
+      - MATRIX_DOMAIN=$NANOON_MATRIXID
+    labels:
+      - "traefik.enable=true"
+      - "traefik.frontend.rule=Host:$NANOON_MATRIXID"
+      - "traefik.port=8090"
+
+  matrix-riot:
+    image: avhost/docker-matrix-riot
+    container_name: matrix-riot
+    networks:
+      - nanoon
+    restart: always
+    volumes:
+      #- ./data/:/data/
+      - $NANOON_CONFIGDIR/synapse:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.frontend.rule=Host:$NANOON_CHAT2"
+      - "traefik.port=8765"
+
+networks:
+  nanoon:
+    external:
+      name: traefik_nanoon
+

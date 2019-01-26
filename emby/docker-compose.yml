@@ -1,0 +1,30 @@
+version: '2'
+services:
+
+  emby:
+    mem_limit: 2048M
+    container_name: emby
+    image: emby/embyserver
+    restart: always
+    ports:
+      - "8096:8096"
+    networks:
+      - nanoon
+    environment:
+      - UID=$NANOON_UID
+      - GID=$NANOON_GID
+      - GIDLIST=4 
+      - TZ=Europe/Paris
+    volumes:
+     - $NANOON_FILESDIR:/media
+     - $NANOON_CONFIGDIR/emby/:/config
+    labels:
+     - "traefik.frontend.rule=Host:$NANOON_PLAY"
+     - "traefik.port=8096"
+     - "traefik.enable=true"
+
+networks:
+  nanoon:
+    external:
+      name: traefik_nanoon
+

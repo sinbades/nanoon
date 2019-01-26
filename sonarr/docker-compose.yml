@@ -1,0 +1,30 @@
+version: '2'
+services:
+
+  sonarr:
+    mem_limit: 384M
+    container_name: sonarr
+    restart: always
+    image: linuxserver/sonarr
+    ports:
+      - "7779:8989"
+    networks:
+      - nanoon
+    environment:
+      - PGID=$NANOON_GID
+      - PUID=$NANOON_UID
+      - TZ=Europe/Paris
+    volumes:
+      - $NANOON_FILESDIR/Shows/:/tv
+      - $NANOON_FILESDIR/Transmission:/downloads
+      - $NANOON_CONFIGDIR/sonarr:/config
+      - $NANOON_BACKUPDIR/sonarr:/config/Backups
+    labels:
+     - "traefik.frontend.rule=Host:$NANOON_SHOW"
+     - "traefik.port=8989"
+     - "traefik.enable=true"
+
+networks:
+  nanoon:
+    external:
+      name: traefik_nanoon

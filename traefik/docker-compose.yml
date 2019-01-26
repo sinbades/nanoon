@@ -2,10 +2,11 @@ version: '2'
 
 services:
   traefik:
-    image: traefik
+    image: traefik:alpine
     container_name : traefik
     restart: always
-    command: --web --docker --docker.domain=docker.localhost --logLevel=DEBUG
+    hostname: traefik
+    command: --api --docker --accessLog.filePath=/var/log/access.log --accessLog.filters.statusCodes=400-499
     networks:
       - nanoon
     ports:
@@ -16,6 +17,25 @@ services:
       - $NANOON_CONFIGDIR/traefik/traefik.toml:/etc/traefik/traefik.toml
       - $NANOON_CONFIGDIR/traefik/acme/acme.json:/acme.json 
       - /var/run/docker.sock:/var/run/docker.sock
+      - /var/log/traefik:/var/log
+
+  dnsproxy:
+    image: defreitas/dns-proxy-server
+    container_name: dnsproxy
+    restart: always
+    networks:
+      nanoon:
+        ipv4_address: 172.18.0.98
+    environment:
+     - "MG_REGISTER_CONTAINER_NAMES=1"
+    volumes:
+      #- /etc/resolv.conf:/etc/resolv.conf
+      - /var/run/docker.sock:/var/run/docker.sock
+
 networks:
   nanoon:
     driver: bridge
+    ipam:
+      config:
+       - subnet: 172.18.0.0/16
+

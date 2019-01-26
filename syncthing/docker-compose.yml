@@ -1,0 +1,30 @@
+version: '2'
+services:
+
+  syncthing:
+    container_name: syncthing
+    image: linuxserver/syncthing
+    restart: always
+    ports:
+      - 8384:8384
+      - 22000:22000
+      - 21027:21027/udp
+    networks:
+      - nanoon
+    environment:
+      - TZ=Europe/Paris
+      - PGID=$NANOON_GID
+      - PUID=$NANOON_UID
+    volumes:
+      - $NANOON_FILESDIR/Syncthing/:/config
+      - $NANOON_FILESDIR:/mnt/Files
+    labels:
+      - "traefik.frontend.rule=Host:$NANOON_SYNC"
+      - "traefik.port=8384"
+      - "traefik.enable=true"
+
+networks:
+  nanoon:
+    external:
+      name: traefik_nanoon
+

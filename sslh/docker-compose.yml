@@ -5,6 +5,7 @@ services:
     image: shaddysignal/sslh-hub
     container_name : sslh
     restart: always
+    privileged: true
     entrypoint : /startsslh.sh
     ports:
       - 443:443 
